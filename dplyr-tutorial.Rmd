@@ -43,6 +43,8 @@ head(hflights)
 
 ```{r}
 # convert to local data frame
+# A local dataframe is essentially the same as a dataframe, but it has a nicer printing format 
+# it summarizes the number of rows and cols 
 flights <- tbl_df(hflights)
 
 # printing only shows 10 rows and as many columns as can fit on your screen
@@ -58,7 +60,7 @@ data.frame(head(flights))
 ```
 
 
-## filter: Keep rows matching criteria
+## filter: Keep ROW matching criteria
 
 * Base R approach to filtering forces you to repeat the data frame's name
 * dplyr approach is simpler to write and read
@@ -70,12 +72,18 @@ data.frame(head(flights))
 
 ```{r results='hide'}
 # base R approach to view all flights on January 1
+##select the rows where month and day corresponds to Jan 01 
+##to select a certain row, use the [row,col] function
 flights[flights$Month==1 & flights$DayofMonth==1, ]
 ```
 
 ```{r}
 # dplyr approach
 # note: you can use comma or ampersand to represent AND condition
+##first write the name of the dataframe, condition and other condition
+# , is interpretted as and 
+## Nothing is modified in the dataframe, it only presents u the data u requested 
+## so you can save it into a separate dataframe if you need to use it 
 filter(flights, Month==1, DayofMonth==1)
 
 # use pipe for OR condition
@@ -101,9 +109,10 @@ flights[, c("DepTime", "ArrTime", "FlightNum")]
 
 ```{r}
 # dplyr approach
+#write the name of data frame, follow by the cols you want to select 
 select(flights, DepTime, ArrTime, FlightNum)
 
-# use colon to select multiple contiguous columns, and use `contains` to match columns by name
+# use colon to select multiple consecutive columns, and use `contains` to select column that has a specific keyword
 # note: `starts_with`, `ends_with`, and `matches` (for regular expressions) can also be used to match columns by name
 select(flights, Year:DayofMonth, contains("Taxi"), contains("Delay"))
 ```
@@ -116,14 +125,17 @@ select(flights, Year:DayofMonth, contains("Taxi"), contains("Delay"))
 
 ```{r results='hide'}
 # nesting method to select UniqueCarrier and DepDelay columns and filter for delays over 60 minutes
+# I want to know which carriers have flight delay > 60 
+#typically to do this, we need to first select the cols of required data (carrier and delay)
+#then we filter thru these rows to get those that have dep delay values > 60 
 filter(select(flights, UniqueCarrier, DepDelay), DepDelay > 60)
 ```
 
 ```{r}
 # chaining method
-flights %>%
-    select(UniqueCarrier, DepDelay) %>%
-    filter(DepDelay > 60)
+flights %>% #datafame then
+    select(UniqueCarrier, DepDelay) %>% #operation 1 
+    filter(DepDelay > 60) #operation 2
 ```
 
 * Chaining increases readability significantly when there are many commands
@@ -138,7 +150,9 @@ sqrt(sum((x1-x2)^2))
 
 ```{r}
 # chaining method
-(x1-x2)^2 %>% sum() %>% sqrt()
+(x1-x2)^2 %>% 
+    sum() %>% 
+    sqrt()
 ```
 
 
@@ -153,7 +167,7 @@ flights[order(flights$DepDelay), c("UniqueCarrier", "DepDelay")]
 # dplyr approach
 flights %>%
     select(UniqueCarrier, DepDelay) %>%
-    arrange(DepDelay)
+    arrange(DepDelay) #ascending sorting by default 
 ```
 
 ```{r results='hide'}
@@ -178,15 +192,17 @@ flights[, c("Distance", "AirTime", "Speed")]
 # dplyr approach (prints the new variable but does not store it)
 flights %>%
     select(Distance, AirTime) %>%
-    mutate(Speed = Distance/AirTime*60)
+    mutate(Speed = Distance/AirTime*60) #define new variable names, need to use $sign when refering to old variable names since we are refering to variable not the col 
+#this does not store the new variable. it just prints it and show u
 
-# store the new variable
+# store the new variable back to the data frame 
+#Assign changes back to the dataframe 
 flights <- flights %>% mutate(Speed = Distance/AirTime*60)
 ```
 
 
 ## summarise: Reduce variables to values
-
+### To group data by a certain variable, and aggregate it with an operation 
 * Primarily useful with data that has been grouped by one or more variables
 * `group_by` creates the groups that will be operated on
 * `summarise` uses the provided aggregation function to summarise each group
@@ -199,9 +215,10 @@ head(aggregate(ArrDelay ~ Dest, flights, mean))
 
 ```{r}
 # dplyr approach: create a table grouped by Dest, and then summarise each group by taking the mean of ArrDelay
+#usually if what we want to do includes "for each..." we likely need to perform group_by
 flights %>%
-    group_by(Dest) %>%
-    summarise(avg_delay = mean(ArrDelay, na.rm=TRUE))
+    group_by(Dest) %>% #it arranges by similar dest 
+    summarise(avg_delay = mean(ArrDelay, na.rm=TRUE)) #creates a new variable  there are NA values so need to do na.rm = TRUE 
 ```
 
 * `summarise_each` allows you to apply the same summary function to multiple columns at once
